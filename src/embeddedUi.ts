@@ -1,0 +1,459 @@
+// Embedded UI Dashboard & Scripts untuk Cloudflare Workers fallback
+export const DASHBOARD_HTML = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToonGod 18+ API - Adult Webtoon & Manhwa Gateway</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0c;
+      --surface: #121214;
+      --surface-hover: #1a1a1d;
+      --primary: #5865F2;
+      --primary-glow: rgba(88, 101, 242, 0.3);
+      --text: #ffffff;
+      --text-dim: #a0a0a5;
+      --border: #242428;
+      --success: #00e599;
+      --accent-18: #ff3366;
+      --accent-safe: #00b4d8;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Outfit', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .watermark {
+      position: fixed;
+      bottom: 40px;
+      right: 40px;
+      font-size: 80px;
+      font-weight: 900;
+      color: rgba(255, 255, 255, 0.03);
+      pointer-events: none;
+      user-select: none;
+      z-index: -1;
+      transform: rotate(-15deg);
+      white-space: nowrap;
+    }
+    .header { text-align: center; margin-bottom: 45px; max-width: 800px; }
+    .header h1 {
+      font-size: 46px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 10px;
+      display: inline-block;
+      background: linear-gradient(135deg, #ffffff 0%, #6366f1 15%, #06b6d4 30%, #10b981 45%, #f59e0b 60%, #ec4899 75%, #8b5cf6 90%, #ffffff 100%);
+      background-size: 400% 400%;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: headerSwirl 8s ease-in-out infinite;
+      cursor: default;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .header h1:hover { transform: scale(1.04); animation-duration: 4s; }
+    @keyframes headerSwirl {
+      0% { background-position: 0% 0%; filter: hue-rotate(0deg) drop-shadow(0 0 16px rgba(99, 102, 241, 0.4)); }
+      25% { background-position: 100% 30%; filter: hue-rotate(90deg) drop-shadow(0 0 24px rgba(6, 182, 212, 0.5)); }
+      50% { background-position: 70% 100%; filter: hue-rotate(180deg) drop-shadow(0 0 24px rgba(16, 185, 129, 0.5)); }
+      75% { background-position: 0% 80%; filter: hue-rotate(270deg) drop-shadow(0 0 24px rgba(245, 158, 11, 0.5)); }
+      100% { background-position: 0% 0%; filter: hue-rotate(360deg) drop-shadow(0 0 16px rgba(99, 102, 241, 0.4)); }
+    }
+    .header p { color: var(--text-dim); font-size: 17px; }
+    .target-badge { font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+    .target-badge a { color: #06b6d4; text-decoration: none; font-weight: 600; border-bottom: 1px dashed #06b6d4; transition: all 0.2s; }
+    .target-badge a:hover { color: #38bdf8; border-bottom-style: solid; }
+    .base-url-box {
+      background: transparent;
+      border: 1px solid var(--border);
+      padding: 12px 24px;
+      border-radius: 100px;
+      margin-top: 22px;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+      cursor: pointer;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+    }
+    .base-url-box::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 500px;
+      height: 500px;
+      background: conic-gradient(from 0deg, #ff0055, #ff5500, #ffbb00, #10b981, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #ff0055);
+      animation: rotateRainbow 3.5s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: -2;
+      pointer-events: none;
+    }
+    .base-url-box::after {
+      content: '';
+      position: absolute;
+      inset: 1.5px;
+      background: var(--surface);
+      border-radius: 100px;
+      z-index: -1;
+      transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+    .base-url-box:hover {
+      transform: translateY(-2px);
+      border-color: transparent;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(139, 92, 246, 0.3);
+    }
+    .base-url-box:hover::before { opacity: 1; }
+    .base-url-box:hover::after { background: var(--surface-hover); }
+    .base-url-box .status {
+      width: 8px;
+      height: 8px;
+      background: var(--success);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--success);
+      transition: transform 0.2s ease;
+    }
+    .base-url-box:hover .status { transform: scale(1.2); }
+    .section-container { width: 100%; max-width: 1200px; margin-bottom: 35px; }
+    .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .section-bar { width: 4px; height: 18px; background: var(--primary); border-radius: 2px; box-shadow: 0 0 10px var(--primary-glow); }
+    .section-bar.pink { background: var(--accent-18); box-shadow: 0 0 10px rgba(255, 51, 102, 0.5); }
+    .section-title { font-size: 18px; font-weight: 700; color: var(--text); letter-spacing: -0.2px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(380px, 1fr)); gap: 15px; width: 100%; }
+    @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+    .endpoint-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.25s ease;
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+      isolation: isolate;
+    }
+    .endpoint-card::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 800px;
+      height: 800px;
+      background: conic-gradient(from 0deg, #ff0055, #ff5500, #ffbb00, #10b981, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #ff0055);
+      animation: rotateRainbow 3.5s linear infinite;
+      opacity: 0;
+      transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      z-index: -2;
+      pointer-events: none;
+    }
+    .endpoint-card::after {
+      content: '';
+      position: absolute;
+      inset: 1.5px;
+      background: var(--surface);
+      border-radius: 10.5px;
+      z-index: -1;
+      transition: background 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      pointer-events: none;
+    }
+    .endpoint-card:hover {
+      transform: translateY(-3px);
+      border-color: transparent;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 20px rgba(139, 92, 246, 0.25), 0 0 35px rgba(236, 72, 153, 0.15);
+    }
+    .endpoint-card:hover::before { opacity: 1; }
+    .endpoint-card:hover::after { background: var(--surface-hover); }
+    @keyframes rotateRainbow {
+      from { transform: translate(-50%, -50%) rotate(0deg); }
+      to { transform: translate(-50%, -50%) rotate(360deg); }
+    }
+    .info { display: flex; flex-direction: column; gap: 4px; flex: 1; position: relative; z-index: 1; min-width: 0; }
+    .method-badge-wrapper { display: flex; align-items: center; gap: 6px; }
+    .method { font-size: 10px; font-weight: 800; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+    .tag-18 {
+      font-size: 9px;
+      font-weight: 800;
+      color: #ff3366;
+      background: rgba(255, 51, 102, 0.15);
+      border: 1px solid rgba(255, 51, 102, 0.4);
+      padding: 1px 5px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+    .path {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .desc { font-size: 12.5px; color: var(--text-dim); }
+    .actions { display: flex; gap: 8px; margin-left: 15px; position: relative; z-index: 2; }
+    .btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      letter-spacing: 0.5px;
+    }
+    .btn:hover { background: var(--primary); color: white; border-color: var(--primary); }
+    .footer { margin-top: 50px; color: var(--text-dim); font-size: 13px; text-align: center; }
+    #toast {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      background: rgba(18, 18, 24, 0.95);
+      border: 1px solid rgba(0, 229, 153, 0.4);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      padding: 12px 18px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: #ffffff;
+      box-shadow: 0 15px 40px rgba(0, 0, 0, 0.7), 0 0 25px rgba(0, 229, 153, 0.2);
+      transform: translateY(40px) scale(0.95);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 10000;
+      max-width: 380px;
+    }
+    #toast.show { transform: translateY(0) scale(1); opacity: 1; pointer-events: auto; }
+    #toast .toast-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: rgba(0, 229, 153, 0.15);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      border: 1px solid rgba(0, 229, 153, 0.3);
+      color: #00e599;
+      font-weight: bold;
+    }
+    #toast .toast-text { display: flex; flex-direction: column; gap: 2px; overflow: hidden; }
+    #toast .toast-title { font-size: 13px; font-weight: 700; color: #ffffff; }
+    #toast .toast-desc {
+      font-size: 11px;
+      color: var(--text-dim);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      font-family: 'JetBrains Mono', monospace;
+      max-width: 260px;
+    }
+    @media (max-width: 480px) {
+      #toast { left: 20px; right: 20px; bottom: 20px; max-width: calc(100vw - 40px); }
+    }
+  </style>
+</head>
+<body>
+  <div class="watermark">TOONGOD 18+</div>
+  <div class="header">
+    <h1>TOONGOD <span>18+</span></h1>
+    <p>Exclusive Adult 18+ Webtoon & Manhwa Scraper Gateway</p>
+    <div class="target-badge">
+      Target: <a href="https://www.toongod.org" target="_blank">https://www.toongod.org</a> (Only 18+ Adult Content)
+    </div>
+    <div class="base-url-box" title="Klik untuk salin Base URL">
+      <div class="status"></div>
+      <span id="base-url">Loading...</span>
+    </div>
+  </div>
+
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-bar pink"></span>
+      <h2 class="section-title">🔞 18+ Homepage & Catalog</h2>
+    </div>
+    <div class="grid" id="endpoint-grid-catalog"></div>
+  </div>
+
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-bar"></span>
+      <h2 class="section-title">🔍 18+ Search & Discovery</h2>
+    </div>
+    <div class="grid" id="endpoint-grid-search"></div>
+  </div>
+
+  <div class="section-container">
+    <div class="section-header">
+      <span class="section-bar pink"></span>
+      <h2 class="section-title">📑 18+ Comic Details & Chapter Reader</h2>
+    </div>
+    <div class="grid" id="endpoint-grid-reader"></div>
+  </div>
+
+  <div class="footer">
+    ToonGod 18+ Scraper API • Cloudflare Worker & Vercel Edition
+  </div>
+
+  <div id="toast">
+    <div class="toast-icon">✓</div>
+    <div class="toast-text">
+      <div class="toast-title">Berhasil Disalin!</div>
+      <div class="toast-desc">URL endpoint telah tersimpan di clipboard</div>
+    </div>
+  </div>
+
+  <script src="/main.js"></script>
+</body>
+</html>`;
+
+export const DASHBOARD_JS = `document.addEventListener('DOMContentLoaded', () => {
+  const baseUrl = window.location.origin;
+  const baseUrlEl = document.getElementById('base-url');
+  if (baseUrlEl) baseUrlEl.innerText = baseUrl;
+
+  const baseUrlBox = document.querySelector('.base-url-box');
+  if (baseUrlBox) {
+    baseUrlBox.addEventListener('click', () => {
+      copyToClipboard(baseUrl, 'Base URL berhasil disalin: ' + baseUrl);
+    });
+  }
+
+  const catalogEndpoints = [
+    { displayPath: '/api/home', examplePath: '/api/home', desc: '18+ Homepage Feed (Trending 18+ Slider & Update Terbaru)', method: 'GET', badge: '18+' },
+    { displayPath: '/api/webtoons', examplePath: '/api/webtoons?page=1&orderby=latest', desc: 'Semua 18+ Webtoon Terbaru (Paginated)', method: 'GET', badge: '18+' },
+    { displayPath: '/api/webtoons?orderby=trending', examplePath: '/api/webtoons?page=1&orderby=trending', desc: '18+ Webtoon Paling Banyak Dicari / Trending', method: 'GET', badge: '18+' },
+    { displayPath: '/api/webtoons?orderby=views', examplePath: '/api/webtoons?page=1&orderby=views', desc: '18+ Webtoon Terpopuler (Most Views All-Time)', method: 'GET', badge: '18+' },
+    { displayPath: '/api/webtoons?orderby=rating', examplePath: '/api/webtoons?page=1&orderby=rating', desc: '18+ Webtoon dengan Rating Tertinggi', method: 'GET', badge: '18+' },
+    { displayPath: '/api/genres', examplePath: '/api/genres', desc: 'Daftar Seluruh Kategori & Genre Komik Dewasa', method: 'GET' }
+  ];
+
+  const searchEndpoints = [
+    { displayPath: '/api/search?q={query}', examplePath: '/api/search?q=secret&page=1', desc: 'Cari Judul Komik 18+: "secret"', method: 'GET', badge: '18+' },
+    { displayPath: '/api/search?q={query}', examplePath: '/api/search?q=boarding&page=1', desc: 'Cari Judul Komik 18+: "boarding"', method: 'GET', badge: '18+' },
+    { displayPath: '/api/search?q={query}', examplePath: '/api/search?q=circles&page=1', desc: 'Cari Judul Komik 18+: "circles"', method: 'GET', badge: '18+' }
+  ];
+
+  const readerEndpoints = [
+    { displayPath: '/api/detail/{slug}', examplePath: '/api/detail/secret-class', desc: 'Detail Komik, Sinopsis, Genre, Status, & Daftar Chapter', method: 'GET' },
+    { displayPath: '/api/chapter/{slug}/{chapterSlug}', examplePath: '/api/chapter/secret-class/chapter-1', desc: 'Data Pembaca Chapter (Daftar URL Gambar / Reader)', method: 'GET' },
+    { displayPath: '/api/info', examplePath: '/api/info', desc: 'Metadata Spesifikasi JSON API (Raw Scheme)', method: 'GET' }
+  ];
+
+  let toastTimeout;
+  function showToast(title = 'Berhasil Disalin!', desc = 'URL endpoint telah tersimpan di clipboard') {
+    const toast = document.getElementById('toast');
+    if (!toast) return;
+    const titleEl = toast.querySelector('.toast-title');
+    const descEl = toast.querySelector('.toast-desc');
+    if (titleEl) titleEl.innerText = title;
+    if (descEl) descEl.innerText = desc;
+    toast.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => { toast.classList.remove('show'); }, 2500);
+  }
+
+  function copyToClipboard(path, customDesc) {
+    const fullUrl = path.startsWith('http') ? path : window.location.origin + path;
+    showToast('Berhasil Disalin!', customDesc || fullUrl);
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(fullUrl).catch(() => { fallbackCopy(fullUrl); });
+    } else {
+      fallbackCopy(fullUrl);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    textArea.style.position = 'fixed';
+    textArea.style.left = '-9999px';
+    textArea.style.top = '-9999px';
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    try { document.execCommand('copy'); } catch (err) { console.error('Fallback copy failed', err); }
+    document.body.removeChild(textArea);
+  }
+
+  function renderCards(containerId, list) {
+    const container = document.getElementById(containerId);
+    if (!container || !list) return;
+    list.forEach((ep) => {
+      const card = document.createElement('div');
+      card.className = 'endpoint-card';
+      let badgeHtml = '';
+      if (ep.badge === '18+') badgeHtml = '<span class="tag-18">18+</span>';
+      else if (ep.badge === 'SAFE') badgeHtml = '<span class="tag-safe">NON-18+</span>';
+
+      card.innerHTML = \`
+        <div class="info">
+          <div class="method-badge-wrapper">
+            <span class="method">\${ep.method}</span>
+            \${badgeHtml}
+          </div>
+          <span class="path">\${ep.displayPath}</span>
+          <span class="desc">\${ep.desc}</span>
+        </div>
+        <div class="actions">
+          <button class="btn copy-btn" title="Salin URL Endpoint">COPY</button>
+        </div>
+      \`;
+
+      card.addEventListener('click', (e) => {
+        if (!e.target.closest('.copy-btn')) {
+          window.open(baseUrl + ep.examplePath, '_blank');
+        }
+      });
+
+      const copyBtn = card.querySelector('.copy-btn');
+      copyBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        copyToClipboard(ep.examplePath, ep.displayPath);
+        const origText = copyBtn.innerText;
+        copyBtn.innerText = 'COPIED!';
+        copyBtn.style.color = '#00e599';
+        copyBtn.style.borderColor = '#00e599';
+        setTimeout(() => {
+          copyBtn.innerText = origText;
+          copyBtn.style.color = '';
+          copyBtn.style.borderColor = '';
+        }, 1500);
+      });
+
+      container.appendChild(card);
+    });
+  }
+
+  renderCards('endpoint-grid-catalog', catalogEndpoints);
+  renderCards('endpoint-grid-search', searchEndpoints);
+  renderCards('endpoint-grid-reader', readerEndpoints);
+});`;

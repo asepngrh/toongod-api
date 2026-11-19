@@ -1,0 +1,46 @@
+{
+  "name": "toongod-scraper",
+  "version": "1.0.0",
+  "description": "Scraper & REST API untuk ToonGod (toongod.org) berbasis TypeScript, Cheerio, Express, Cloudflare Workers & Vercel",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "dev:api": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:api": "node dist/server.js",
+    "cf:dev": "wrangler dev",
+    "cf:deploy": "wrangler deploy",
+    "vercel:dev": "vercel dev",
+    "vercel:deploy": "vercel --prod"
+  },
+  "keywords": [
+    "toongod",
+    "scraper",
+    "webtoon",
+    "manhwa",
+    "madara",
+    "cheerio",
+    "express",
+    "cloudflare-workers",
+    "vercel"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.7.9",
+    "cheerio": "^1.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^4.17.21",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "wrangler": "^3.109.2"
+  }
+}
